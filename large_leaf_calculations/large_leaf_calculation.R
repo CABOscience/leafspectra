@@ -71,7 +71,7 @@ R_str_path <- paste0(pref, R_str_file, '.sig.txt')
 R_str_raw <- read.table(R_str_path, skip = 19) %>% 
   rename(wvl = V1, R_str = V2)
 
-# put together for leaf array 1
+# put together for leaf  1
 leaf1_df <- R_tar_1_raw %>% 
   mutate(R_ref = R_ref_raw$R_ref,
          R_str = R_str_raw$R_str) %>% 
@@ -93,7 +93,8 @@ leaf1_jer <- leaves %>%
 
 # calculate reflectance of leaf  1
 leaf1 <- leaf1_df %>% 
-  mutate(refl_leaf_etienne = ((R_tar - R_str) / (R_ref - R_str) ) * refl_panel,
+  mutate(refl_leaf = ((R_tar - R_str) / (R_ref - R_str) ),
+    refl_leaf_etienne = ((R_tar - R_str) / (R_ref - R_str) ) * refl_panel,
          refl_leaf_jeremy = leaf1_jer$refl_leaf_jeremy)
 
 
@@ -113,3 +114,68 @@ refl_plot <- ggplot(leaf_long, aes(x = wvl, y = refl)) +
   xlab('Wavelength (nm)')
 refl_plot
 ggsave('refl_plot.pdf', width = 6, height = 4.5)
+
+
+##### Transmittance -----
+
+# D: Transmittance, leaf, reference (T_ref)
+T_ref <- child_sub %>% 
+  filter(sphere_configuration_svc_large_leaves == 'D: Transmittance')
+T_ref_file <- T_ref$file_name[1] # first reference
+
+# E: Transmittance, leaf, target (T_tar)
+T_tar <- child_sub %>% 
+  filter(sphere_configuration_svc_large_leaves == 'E: Transmittance')
+T_tar_files <- T_tar$file_name
+
+#### get data together
+
+# leaf  1
+T_tar_1_path <- paste0(pref, T_tar_files[1], '.sig.txt')
+T_tar_1_raw <- read.table(T_tar_1_path, skip = 19) %>% 
+  rename(wvl = V1, T_tar = V2)
+
+# ref
+T_ref_path <- paste0(pref, T_ref_file, '.sig.txt')
+T_ref_raw <- read.table(T_ref_path, skip = 19) %>% 
+  rename(wvl = V1, T_ref = V2)
+
+# put together for leaf  1
+trans_leaf1_df <- T_tar_1_raw %>% 
+  mutate(T_ref = T_ref_raw$T_ref) %>% 
+  mutate(wvl_num = as.numeric(as.character(wvl) ) ) %>% 
+  filter(wvl_num <= 2513, wvl_num >= 338) %>% 
+  left_join(panel_refls, by = c('wvl_num' = 'wvl') )%>% 
+  mutate(leaf = 1,
+         T_tar = as.numeric(as.character(T_tar)),
+         T_ref = as.numeric(as.character(T_ref))) %>% 
+  filter(!is.na(refl_panel))
+
+# get corrected reflectance from jeremy's files
+trans_leaf1_jer <- leaves %>% 
+  select(wavelength, calculated_value, leaf_number, `reflectance-transmittance`) %>%
+  rename(wvl_num = wavelength, trans_leaf_jeremy = calculated_value, reflectance_transmittance = `reflectance-transmittance` ) %>% 
+  filter(leaf_number == 1, reflectance_transmittance == 'transmittance',
+         wvl_num <= 2500)
+
+# calculate reflectance of leaf  1
+trans_leaf1 <- trans_leaf1_df %>% 
+  mutate(
+         trans_leaf_etienne = ((T_tar) / (T_ref) ),
+         trans_leaf_jeremy = trans_leaf1_jer$trans_leaf_jeremy)
+
+# gather
+trans_leaf_long <- trans_leaf1 %>% 
+  select(wvl_num, trans_leaf_etienne, trans_leaf_jeremy) %>% 
+  rename(wvl = wvl_num,
+         leaf_corr_etienne = trans_leaf_etienne,
+         leaf_corr_jeremy = trans_leaf_jeremy) %>% 
+  gather(key = target, value = trans, -wvl)
+
+# make plot
+trans_plot <- ggplot(trans_leaf_long, aes(x = wvl, y = trans)) +
+  geom_line(aes(colour = target)) +
+  ylab('Transmittance') +
+  xlab('Wavelength (nm)')
+trans_plot
+ggsave('trans_plot.pdf', width = 6, height = 4.5)
