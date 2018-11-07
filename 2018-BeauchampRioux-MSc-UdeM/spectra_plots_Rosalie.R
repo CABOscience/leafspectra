@@ -169,5 +169,5 @@ env_sp_plot3 <- ggplot(env_refl, aes(x = wavelength, y = value_mean)) +
   theme_bw() +
   theme(legend.title = element_blank())
 env_sp_plot3
-ggsave('env_sp_plot3.pdf', width = 5, height = 5)
-ggsave('env_sp_plot3.png', width = 5, height = 5, dpi = 600)  
+ggsave('env_sp_plot3.pdf', width = 9, height = 5)
+ggsave('env_sp_plot3.png', width = 9, height = 5, dpi = 600)  
