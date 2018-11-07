@@ -48,7 +48,10 @@ sgolay_plot <- ggplot(panel_9710_smooth_df, aes(x = wvl, y = raw)) +
   geom_line(alpha = .5) +
   geom_line(aes(y = match), alpha = .5, col = 'blue') + 
   geom_line(aes(y = sgolay55), col = 'red')
-sgolay_plot
+sgolay_plot +
+  ylab('Reflectance') +
+  xlab('Wavelength (nm)')
+ggsave('9710_sgolay.png', width = 6, height = 4.5, dpi = 600)
 
 # save a new calib file to google drive
 write.table(file = 'SRS-99-010-99AA02-0318-9710_smooth.calib', matrix(c(panel_9710_smooth_df$wvl, panel_9710_sg55), byrow = F, ncol = 2, nrow = length(panel_9710_sg55)),
